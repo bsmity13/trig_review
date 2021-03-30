@@ -1,0 +1,90 @@
+---
+title: "Trig Review for Animal Movement"
+author: "Brian J. Smith"
+date: "2021-03-30"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(dplyr)
+```
+
+This is a quick review of trigonometry from the perspective of animal movement data. I am assuming you are working in a projected coordinate system, and therefore, all the calculations are in Euclidean space. These formulas *do not apply* to geographic coordinate systems, *i.e.*, longitude and latitude. If your GPS data (or other animal position data) are in longitude and latitude, please project them to another coordinate reference system before proceeding!
+
+# Distances
+
+## Distance formula
+
+Recall that the distance between two points in Euclidean space (i.e., a projected coordinate system) is the hypotenuse of a triangle, where the other two legs of the triangle are given by the difference in the x-coordinates and the difference in the y-coordinates. 
+
+The hypotenuse, $c$, is given by the Pythagorean theorem, $c^2 = a^2 + b^2$. In our case, we are only interested in the positive solution, so $c = \sqrt{a^2 + b^2}$.
+
+Thus, if we have two GPS points, $(x_1, y_1)$ and $(x_2, y_2)$, the step length, $l$, between them is:
+
+$$l = \sqrt{dx^2 + dy^2} = \sqrt{(x_2 - x_1)^2 + (y_2 - y_1)^2}$$
+
+```{r distance, echo=FALSE, warning=FALSE}
+dist_df <- data.frame(x1 = 0, y1 = 0, x2 = 3, y2 = 3)
+
+ggplot(dist_df, aes(x = x1, y = y1)) + 
+  coord_fixed(xlim = c(-1, 4), 
+              ylim = c(-1, 4)) +
+  # Draw axes
+  geom_hline(yintercept = 0, color = "black", size = 1) +
+  geom_vline(xintercept = 0, color = "black", size = 1) +
+  # Draw step
+  geom_segment(aes(xend = x2, yend = y2),
+               arrow = arrow(length = unit(0.03, "npc")),
+               color = "blue", size = 1) +
+    geom_label(aes(x = (x1 + x2)/2 - 0.5, y = (y1 + y2)/2 + 0.5),
+             label = expression("l =" ~ sqrt(dx^2 + dy^2)),
+             color = "blue",
+             size = 4) +
+  # Draw dx
+  geom_segment(aes(xend = x2, yend = y1),
+               color = "green4", 
+               size = 1) +
+  geom_label(aes(x = (x1 + x2)/2, y = -0.25),
+             label = expression("dx =" ~ x[2] - x[1]),
+             color = "green4",
+             size = 4) +
+  # Draw dy
+  geom_segment(aes(x = x2, xend = x2, yend = y2),
+               color = "purple", 
+               size = 1) +
+    geom_label(aes(x = x2 + 0.25, y = (y1 + y2)/2),
+             label = expression("dy =" ~ y[2] - y[1]),
+             color = "purple",
+             size = 4) +
+  # Draw startpoint
+  geom_point(color = "red", size = 2) +
+  geom_text(aes(x = x1 - 0.5, y = y1 + 0.25),
+            label = expression(("x"[1] ~ "," ~ "y"[1])),
+            color = "red") +
+  # Draw endpoint
+  geom_point(aes(x = x2, y = y2), color = "red", size = 2) +
+  geom_text(aes(x = x2 + 0.25, y = y2 + 0.25),
+            label = expression(("x"[2] ~ "," ~ "y"[2])),
+            color = "red") +
+  xlab(NULL) +
+  ylab(NULL) +
+  theme_bw()  
+```
+
+Here's one way to code that. Given a `data.frame` with columns `x1`, `y1`, `x2`, `y2` for each step, the distance can be calculated as:
+
+```{r calc dist}
+library(dplyr)
+
+dist_df %>% 
+  mutate(dx = x2 - x1,
+         dy = y2 - y1,
+         sl = sqrt(dx^2 + dy^2))
+```
+
+# Angles
+
+## Degrees and radians
+
