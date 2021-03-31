@@ -2,7 +2,11 @@
 title: "Trig Review for Animal Movement"
 author: "Brian J. Smith"
 date: "2021-03-30"
-output: html_document
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    collapsed: false
 ---
 
 ```{r setup, include=FALSE}
@@ -11,13 +15,15 @@ library(ggplot2)
 library(dplyr)
 ```
 
-This is a quick review of trigonometry from the perspective of animal movement data. I am assuming you are working in a projected coordinate system, and therefore, all the calculations are in Euclidean space. These formulas *do not apply* to geographic coordinate systems, *i.e.*, longitude and latitude. If your GPS data (or other animal position data) are in longitude and latitude, please project them to another coordinate reference system before proceeding!
+## About
 
-# Distances
+This is a quick review of trigonometry from the perspective of animal movement data. I am assuming you are working in a projected coordinate system, and therefore, all the calculations are in Euclidean space. These formulas *do not apply* to geographic coordinate systems, *i.e.*, longitude and latitude. If your GPS data (or other animal position data) are in longitude and latitude, please project them to another coordinate reference system (*e.g.*, UTM) before proceeding!
 
-## Distance formula
+## Distances
 
-Recall that the distance between two points in Euclidean space (i.e., a projected coordinate system) is the hypotenuse of a triangle, where the other two legs of the triangle are given by the difference in the x-coordinates and the difference in the y-coordinates. 
+### Distance formula
+
+Recall that the distance between two points in Euclidean space is the hypotenuse of a triangle, where the other two legs of the triangle are given by the difference in the x-coordinates and the difference in the y-coordinates. 
 
 The hypotenuse, $c$, is given by the Pythagorean theorem, $c^2 = a^2 + b^2$. In our case, we are only interested in the positive solution, so $c = \sqrt{a^2 + b^2}$.
 
@@ -38,7 +44,7 @@ ggplot(dist_df, aes(x = x1, y = y1)) +
   geom_segment(aes(xend = x2, yend = y2),
                arrow = arrow(length = unit(0.03, "npc")),
                color = "blue", size = 1) +
-    geom_label(aes(x = (x1 + x2)/2 - 0.5, y = (y1 + y2)/2 + 0.5),
+  geom_label(aes(x = (x1 + x2)/2 - 0.5, y = (y1 + y2)/2 + 0.5),
              label = expression("l =" ~ sqrt(dx^2 + dy^2)),
              color = "blue",
              size = 4) +
@@ -54,7 +60,7 @@ ggplot(dist_df, aes(x = x1, y = y1)) +
   geom_segment(aes(x = x2, xend = x2, yend = y2),
                color = "purple", 
                size = 1) +
-    geom_label(aes(x = x2 + 0.25, y = (y1 + y2)/2),
+  geom_label(aes(x = x2 + 0.25, y = (y1 + y2)/2),
              label = expression("dy =" ~ y[2] - y[1]),
              color = "purple",
              size = 4) +
@@ -79,12 +85,226 @@ Here's one way to code that. Given a `data.frame` with columns `x1`, `y1`, `x2`,
 library(dplyr)
 
 dist_df %>% 
+  # Calculate dx, dy, sl
   mutate(dx = x2 - x1,
          dy = y2 - y1,
          sl = sqrt(dx^2 + dy^2))
 ```
 
-# Angles
+## Angles
 
-## Degrees and radians
+### Degrees and radians
 
+Most of us are familiar with expressing headings in geographic space in terms of degrees. 0° is north, 90° is east, 180° is south, 270° is W, and 360° is (again) north.
+
+Mathematicians, calculators, and R all prefer to express angles in radians. Why? For a fun blog post, you might read [this](https://mathwithbaddrawings.com/2013/05/02/degrees-vs-radians/), and for a more practical perspective, you might read [this](https://teachingcalculus.com/2012/10/12/951/).
+
+We will work in radians here. One radian is the radius of a circle laid onto its circumference. That means that the entire circle is $2\pi$ radians. We can convert from degrees to radians by multiplying by $\pi/180$ (or equivalently $2\pi/360$). That is, for an angle $\theta_d$ measured in degrees, that same angle, $\theta_r$, in radians is:
+
+$$\theta_r = \theta_d \times \frac{\pi}{180}$$
+
+### Absolute angles
+
+Let's return to our GPS data.
+
+As before, we have two GPS points, $(x_1, y_1)$ and $(x_2, y_2)$, but now we want to know the heading of that step, *i.e.*, the direction of travel. We can calculate the angle *inside our triangle*, that is, the angle between the x-axis and our step, as $tan^{-1}(dy/dx)$, where $tan^{-1}$ is the inverse tangent, a.k.a., arctangent function. In R, you can call the arctangent function with `atan()`. We can represent that graphically like this:
+
+```{r atan, echo=FALSE, warning=FALSE}
+ggplot(dist_df, aes(x = x1, y = y1)) + 
+  coord_fixed(xlim = c(-1, 4), 
+              ylim = c(-1, 4)) +
+  # Draw axes
+  geom_hline(yintercept = 0, color = "black", size = 1) +
+  geom_vline(xintercept = 0, color = "black", size = 1) +
+  # Draw step
+  geom_segment(aes(xend = x2, yend = y2),
+               arrow = arrow(length = unit(0.03, "npc")),
+               color = "blue", size = 1) +
+  # Label angle
+  geom_text(aes(x = x1 + 0.4, y = y1 + 0.25),
+            label = expression(theta ~ "=" ~ atan(dy/dx)),
+            hjust = "left") +
+  # Draw dx
+  geom_segment(aes(xend = x2, yend = y1),
+               color = "green4", 
+               size = 1) +
+  geom_label(aes(x = (x1 + x2)/2, y = -0.25),
+             label = expression("dx =" ~ x[2] - x[1]),
+             color = "green4",
+             size = 4) +
+  # Draw dy
+  geom_segment(aes(x = x2, xend = x2, yend = y2),
+               color = "purple", 
+               size = 1) +
+  geom_label(aes(x = x2 + 0.25, y = (y1 + y2)/2),
+             label = expression("dy =" ~ y[2] - y[1]),
+             color = "purple",
+             size = 4) +
+  # Draw startpoint
+  geom_point(color = "red", size = 2) +
+  geom_text(aes(x = x1 - 0.5, y = y1 + 0.25),
+            label = expression(("x"[1] ~ "," ~ "y"[1])),
+            color = "red") +
+  # Draw endpoint
+  geom_point(aes(x = x2, y = y2), color = "red", size = 2) +
+  geom_text(aes(x = x2 + 0.25, y = y2 + 0.25),
+            label = expression(("x"[2] ~ "," ~ "y"[2])),
+            color = "red") +
+  xlab(NULL) +
+  ylab(NULL) +
+  theme_bw()  
+```
+
+This works great for this particular example. This calculation gives us the angle *inside* the triangle, which in this case is between the positive x-axis and the step, *i.e.*, the angle north from east. There are two general problems with this: 
+
+  1. The first problem is that we are typically interested in measuring our angles as the difference from north (clockwise). 
+  2. The second problem is that the angle will not always be the angle north of east for all steps. 
+  
+Let's tackle the second problem first. Consider another step which heads southwest ($5\pi/4$ rad or 225°). Here, $(x_1, y_1) = (0, 0)$ and $(x_2, y_2) = (-3, -3)$. We find that $arctan(-3/-3) = arctan(3/3) = \pi/4$. Our angle is the same, but now it is relative to the negative x-axis, *i.e*, it is the angle south of west.
+
+```{r atan sw, echo=FALSE, warning=FALSE}
+dist_sw <- data.frame(x1 = 0, y1 = 0, x2 = -3, y2 = -3)
+
+ggplot(dist_sw, aes(x = x1, y = y1)) + 
+  coord_fixed(xlim = c(-4, 1), 
+              ylim = c(-4, 1)) +
+  # Draw axes
+  geom_hline(yintercept = 0, color = "black", size = 1) +
+  geom_vline(xintercept = 0, color = "black", size = 1) +
+  # Draw step
+  geom_segment(aes(xend = x2, yend = y2),
+               arrow = arrow(length = unit(0.03, "npc")),
+               color = "blue", size = 1) +
+  # Label angle
+  geom_text(aes(x = x1 - 0.4, y = y1 - 0.25),
+            label = expression(atan(dy/dx) ~ "=" ~ theta),
+            hjust = "right") +
+  # Draw dx
+  geom_segment(aes(xend = x2, yend = y1),
+               color = "green4", 
+               size = 1) +
+  geom_label(aes(x = (x1 + x2)/2, y = 0.25),
+             label = expression("dx =" ~ x[2] - x[1]),
+             color = "green4",
+             size = 4) +
+  # Draw dy
+  geom_segment(aes(x = x2, xend = x2, yend = y2),
+               color = "purple", 
+               size = 1) +
+  geom_label(aes(x = x2 - 0.5, y = (y1 + y2)/2),
+             label = expression("dy =" ~ y[2] - y[1]),
+             color = "purple",
+             size = 4) +
+  # Draw startpoint
+  geom_point(color = "red", size = 2) +
+  geom_text(aes(x = x1 + 0.5, y = y1 + 0.25),
+            label = expression(("x"[1] ~ "," ~ "y"[1])),
+            color = "red") +
+  # Draw endpoint
+  geom_point(aes(x = x2, y = y2), color = "red", size = 2) +
+  geom_text(aes(x = x2 - 0.25, y = y2 - 0.25),
+            label = expression(("x"[2] ~ "," ~ "y"[2])),
+            color = "red") +
+  xlab(NULL) +
+  ylab(NULL) +
+  theme_bw()  
+```
+
+The problem is that we need to know which quadrant we're in to figure out the direction from which our angle is measured. That information is contained in the sign of $dx$ and $dy$, but it is lost when we take the ratio $dy/dx$ and pass that to $arctan(dy/dx)$. The solution is the 2-argument arctangent, which keeps $dy$ and $dx$ separated, thus preserving the information about the sign of each. You can read more about $arctan2()$ on [Wikipedia](https://en.wikipedia.org/wiki/Atan2). It is implemented in R (and most other calculators/programming languages) as `atan2()`. The function $arctan2()$ will always return the angle between the positive x-axis (east) and your step.
+
+This brings us back to our first problem. We normally measure headings relative to north, not east. How can we adjust? The angle relative to east, $\theta_E$, is just $\pi/2$ rad (90°) from the angle relative to north, $\theta_N$. With some algebra, we can determine:
+
+$$\theta_E = \frac{\pi}{2} - \theta_N$$
+$$\theta_E - \frac{\pi}{2} = - \theta_N$$
+$$-\theta_E + \frac{\pi}{2} = \theta_N$$
+$$\frac{\pi}{2} -\theta_E  = \theta_N$$
+
+We simply subtract the angle relative to east from $\pi/2$ and we have the angle relative to north. Whenever the angle relative to east is greater than $\pi/2$, this will result in a negative number. This is a valid angle, but it makes more intuitive sense to express them in the interval $[0, 2\pi]$, so we can take advantage of [modular arithmetic](https://en.wikipedia.org/wiki/Modular_arithmetic) (a.k.a., clock math) and express our values modulo $2\pi$.
+
+To recap, the absolute angle relative to east is $arctan2(dy, dx)$, and the absolute angle relative to north is $\pi/2 - arctan2(dy, dx)$. If we always want that angle in the interval $[0, 2\pi]$, the angle is $\pi/2 - arctan2(dy, dx) \bmod 2\pi$.
+
+Here's one way to code that, using the same `data.frame` as above. Note that, in R, the modulo operator is `%%`.
+
+```{r calc abs angle}
+dist_df %>% 
+  # Calculate dx, dy, sl
+  mutate(dx = x2 - x1,
+         dy = y2 - y1,
+         sl = sqrt(dx^2 + dy^2)) %>% 
+  # Calculate abs_angle, modulo 2pi
+  mutate(abs_angle = (pi/2 - atan2(dy, dx)) %% (2*pi))
+```
+
+**Be careful with parentheses!** Note that `x %% 2*pi` will give you $(x \bmod 2) \times \pi$. Instead, you want `x %% (2*pi)`, which will give you $x \bmod 2\pi$.
+
+### Relative angle
+
+If we have two consecutive steps, we can calculate the relative angle of the second step, *i.e.*, the deviation of the second step's heading from the first step's heading. The relative angle is simply the absolute angle of the second step minus the absolute angle of the first step. 
+
+```{r rel angle, echo=FALSE, warning=FALSE}
+dist_rel <- data.frame(x1 = c(0, 3), y1 = c(0, 3),
+                      x2 = c(3, 2), y2 = c(3, 5),
+                      x3 = c(5, NA), y3 = c(5, NA))
+ggplot(dist_rel, aes(x = x1, y = y1)) + 
+  coord_fixed(xlim = c(-1, 5), 
+              ylim = c(-1, 5)) +
+  # Draw axes
+  geom_hline(yintercept = 0, color = "black", size = 1) +
+  geom_vline(xintercept = 0, color = "black", size = 1) +
+  # Draw step
+  geom_segment(aes(xend = x2, yend = y2),
+               arrow = arrow(length = unit(0.03, "npc")),
+               color = "blue", size = 1) +
+  # Draw continuation
+  geom_segment(aes(x = x2, y = y2, xend = x3, yend = y3),
+               color = "blue", size = 1,
+               linetype = "dashed") +
+  # Label angle
+  geom_text(aes(x = 3 + 0.1, y = 3 + 0.5),
+            label = expression(theta["rel"]),
+            color = "blue",
+            hjust = "center") +
+  # Draw points
+  geom_point(color = "red", size = 2) +
+  geom_point(aes(x = x2, y = y2), color = "red", size = 2) +
+  # Label points
+  geom_text(aes(x = 0 - 0.5, y = 0 + 0.25),
+            label = expression(("x"[1] ~ "," ~ "y"[1])),
+            color = "red") +
+  geom_text(aes(x = 3 + 0.5, y = 3 - 0.25),
+            label = expression(("x"[2] ~ "," ~ "y"[2])),
+            color = "red") +
+  geom_text(aes(x = 2 - 0.5, y = 5 - 0.25),
+            label = expression(("x"[3] ~ "," ~ "y"[3])),
+            color = "red") +
+  xlab(NULL) +
+  ylab(NULL) +
+  theme_bw()  
+```
+
+This subtraction can result in either positive values (right turn) or negative values (left turn). It can also result in values larger than $\pi$, which is a right turn so far that you're heading to the left, or smaller than $-\pi$, which is a left turn so far that you're heading to the right. These are valid angles, but it makes more intuitive sense to express them in the interval $[-\pi, \pi]$, so we can again take advantage of [modular arithmetic](https://en.wikipedia.org/wiki/Modular_arithmetic) (a.k.a., clock math) to keep our values within the range $[0, 2\pi]$ and then subtract $2\pi$ if our value is larger than $\pi$.
+
+Here's one way to code this. Note that, in R, the modulo operator is `%%`.
+
+```{r calc rel angle}
+dist_df <- data.frame(x1 = c(0, 3), y1 = c(0, 3),
+                      x2 = c(3, 2), y2 = c(3, 5))
+dist_df %>% 
+  # Calculate dx, dy, sl
+  mutate(dx = x2 - x1,
+         dy = y2 - y1,
+         sl = sqrt(dx^2 + dy^2)) %>% 
+  # Calculate absolute angle, modulo 2pi
+  mutate(abs_angle = (pi/2 - atan2(dy, dx)) %% (2*pi)) %>%
+  # Calculate relative angle, from -pi to pi
+  mutate(rel_diff = (abs_angle - lag(abs_angle)) ,
+         rel_angle = ifelse(rel_diff > pi, rel_diff - 2*pi, rel_diff))
+```
+
+Notice that the first step does not have a relative angle, because there is no previous step for that angle to which to relate that angle.
+
+---
+
+<span style = "font-size: 0.75em; color: #888888;">
+Visit the GitHub repo for the code: https://github.com/bsmity13/trig_review
+</span>
