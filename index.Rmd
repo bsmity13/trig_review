@@ -210,10 +210,11 @@ ggplot(dist_sw, aes(x = x1, y = y1)) +
   theme_bw()  
 ```
 
-The problem is that we need to know which quadrant we're in to figure out the direction from which our angle is measured. That information is contained in the sign of $dx$ and $dy$, but it is lost when we take the ratio $dy/dx$ and pass that to $arctan(dy/dx)$. The solution is the 2-argument arctangent, which keeps $dy$ and $dx$ separated, thus preserving the information about the sign of each. You can read more about $arctan2()$ on [Wikipedia](https://en.wikipedia.org/wiki/Atan2). It is implemented in R (and most other calculators/programming languages) as `atan2()`. The function $arctan2()$ will always return the angle between the positive x-axis (east) and your step.
+The problem is that we need to know which quadrant we're in to figure out the direction from which our angle is measured. That information is contained in the sign of $dx$ and $dy$, but it is lost when we take the ratio $dy/dx$ and pass that to $arctan(dy/dx)$. The solution is the 2-argument arctangent, which keeps $dy$ and $dx$ separated, thus preserving the information about the sign of each. You can read more about $arctan2()$ on [Wikipedia](https://en.wikipedia.org/wiki/Atan2). It is implemented in R (and most other calculators/programming languages) as `atan2()`. The function $arctan2()$ will always return the angle between the positive x-axis (east) and your step (**counterclockwise**).
 
-This brings us back to our first problem. We normally measure headings relative to north, not east. How can we adjust? The angle relative to east, $\theta_E$, is just $\pi/2$ rad (90°) from the angle relative to north, $\theta_N$. With some algebra, we can determine:
+This brings us back to our first problem. We normally measure headings clockwise from north, not counterclockwise from east. How can we adjust? The angle relative to east, $\theta_E$, is just $\pi/2$ rad (90°) from the angle relative to north, $\theta_N$. And if we want to reverse the direction of rotation, we multiply by $-1$. With some algebra, we can determine:
 
+$$\theta_E = -1 \times (\theta_N - \frac{\pi}{2})$$
 $$\theta_E = \frac{\pi}{2} - \theta_N$$
 $$\theta_E - \frac{\pi}{2} = - \theta_N$$
 $$-\theta_E + \frac{\pi}{2} = \theta_N$$
